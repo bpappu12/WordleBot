@@ -2,10 +2,14 @@ import websockets
 import asyncio
 import base64
 import json
+from pynput.keyboard import Key, Controller
+import time
 from configure import auth_key
 
 import pyaudio
  
+keyboard = Controller()
+
 FRAMES_PER_BUFFER = 3200
 FORMAT = pyaudio.paInt16
 CHANNELS = 1
@@ -19,7 +23,7 @@ stream = p.open(
 	rate=RATE,
 	input=True,
 	frames_per_buffer=FRAMES_PER_BUFFER
-)
+)   
  
 # the AssemblyAI endpoint we're going to hit
 URL = "wss://api.assemblyai.com/v2/realtime/ws?sample_rate=16000"
@@ -48,8 +52,8 @@ async def send_receive():
 				try:
 					data = stream.read(FRAMES_PER_BUFFER)
 					data = base64.b64encode(data).decode("utf-8")
-					json_data = json.dumps({"audio_data":str(data)})
-					await _ws.send(json_data)
+					json_data = json.dumps({"audio_data":str(data)})    #sends raw audio file to .json
+					await _ws.send(json_data)                           #sends .json to websocket
 
 				except websockets.exceptions.ConnectionClosedError as e:
 					print(e)
@@ -68,7 +72,8 @@ async def send_receive():
 			while True:
 				try:
 					result_str = await _ws.recv()
-					print(json.loads(result_str)['text'])
+					if json.loads(result_str)['message_type'] == "FinalTranscript":
+						keyboard.type(json.loads(result_str)['text'])
 
 				except websockets.exceptions.ConnectionClosedError as e:
 					print(e)
@@ -77,8 +82,12 @@ async def send_receive():
 
 				except Exception as e:
 					assert False, "Not a websocket 4008 error"
-	  
+
 		send_result, receive_result = await asyncio.gather(send(), receive())
 
+keyboard.press(Key.cmd)
+keyboard.press(Key.tab)
+keyboard.release(Key.cmd)
+keyboard.release(Key.tab)
 while True:
 	asyncio.run(send_receive())
