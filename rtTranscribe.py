@@ -73,9 +73,13 @@ async def send_receive():
 					with open("test.txt", "a") as o:
 						result_str = await _ws.recv()
 						if json.loads(result_str)['message_type'] == "FinalTranscript":
-							o.write(json.loads(result_str)['text'])
+							array = (json.loads(result_str)['words'])
+							for i in range (len(array)):
+								#print(array[i]["text"])
+								if array[i]["text"] == "enter." or array[i]["text"] == "Enter.":
+									keyboard.type(array[i-1]["text"])
 							if json.loads(result_str)['text'] == "Stop.":
-								raise SystemExit                            
+								raise SystemExit                        
 				except websockets.exceptions.ConnectionClosedError as e:
 					print(e)
 					assert e.code == 4008
@@ -85,6 +89,9 @@ async def send_receive():
 					assert False, "Not a websocket 4008 error"
 
 		send_result, receive_result = await asyncio.gather(send(), receive())
-
+#keyboard.press(Key.cmd)
+#keyboard.press(Key.tab)
+#keyboard.release(Key.cmd)
+#keyboard.release(Key.tab)
 while True:
 	asyncio.run(send_receive())
